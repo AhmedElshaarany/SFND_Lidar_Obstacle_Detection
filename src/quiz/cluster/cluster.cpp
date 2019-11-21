@@ -18,7 +18,7 @@ pcl::visualization::PCLVisualizer::Ptr initScene(Box window, int zoom)
   	viewer->setCameraPosition(0, 0, zoom, 0, 1, 0);
   	viewer->addCoordinateSystem (1.0);
 
-  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 1, 1, 1, "window");
+  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 0, 0, 0, "window");
   	return viewer;
 }
 
@@ -75,13 +75,31 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 }
 
+void proximity(const std::vector<std::vector<float>>& points, std::vector<int> &cluster, int point_idx, std::vector<bool> &is_processed, KdTree* tree, float distanceTol){
+	is_processed[point_idx] = true;
+	cluster.push_back(point_idx);
+	std::vector<int> nearby_points = tree->search(points[point_idx], distanceTol);
+	for(int i = 0; i < nearby_points.size(); i++){
+		if(!is_processed[nearby_points[i]]){
+			proximity(points,cluster,nearby_points[i],is_processed,tree,distanceTol);
+		}
+	}
+}
+
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
 {
 
 	// TODO: Fill out this function to return list of indices for each cluster
 
 	std::vector<std::vector<int>> clusters;
- 
+	std::vector<bool> is_processed(points.size(),false);
+	for(int i = 0; i < points.size(); i++){
+		if(!is_processed[i]){
+			std::vector<int> new_cluster;
+			proximity(points,new_cluster,i,is_processed,tree,distanceTol);
+			clusters.push_back(new_cluster);
+		}
+	}
 	return clusters;
 
 }
